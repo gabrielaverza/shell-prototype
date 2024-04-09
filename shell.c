@@ -64,6 +64,6 @@ int main() {
             exit(ERRO_PROCESSO);
         }
     }
-    fclose(stderr);
+    
     return SUCESSO;
 }
