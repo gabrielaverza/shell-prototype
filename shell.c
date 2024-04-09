@@ -11,7 +11,8 @@
 /* CODIGOS DE RETORNO */
 #define SAIR 1
 #define SUCESSO 0
-#define ERRO_PROCESSO -1
+#define ERRO_ENTRADA -1
+#define ERRO_PROCESSO -2
 
 int main() {
     // string que armazena entrada do usuario
@@ -27,8 +28,8 @@ int main() {
         entrada[strcspn(entrada, "\n")] = 0;
 
         if (strlen(entrada) == 0 || entrada[0] == '\0') {
-            perror("Entrada vazia ou com caracteres invalidos.");
-            exit(SAIR);
+            fprintf(stderr, "Entrada vazia ou com caracteres invalidos.\n");
+            exit(ERRO_ENTRADA);
         } else if (strcmp(entrada, "sair") == 0) {
             printf("Ate logo...");
             exit(SAIR);
@@ -48,7 +49,7 @@ int main() {
         if (pid == 0) {
             // processo filho executa comando
             if (execvp(comandos[0], comandos) == -1) {
-                perror("Erro ao executar o comando");
+                fprintf(stderr, "Erro ao executar o comando\n");
                 exit(ERRO_PROCESSO);
             }
             exit(SUCESSO);
@@ -59,10 +60,10 @@ int main() {
             exit(status);
         } else {
             // erro ao criar processo
-            perror("Erro ao criar processo");
+            fprintf(stderr, "Erro ao criar processo\n");
             exit(ERRO_PROCESSO);
         }
     }
-
+    fclose(stderr);
     return SUCESSO;
 }
