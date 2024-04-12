@@ -29,14 +29,11 @@ void remover_aspas(char *str) {
 
 // Separa em comandos individuais com base no operador enviado por parametro
 int divide_comandos(char *input, const char *operador, char **aux_comandos) {
-    // printf("Dividindo comandos com operador: %s\n", operador);
     char *token = strtok(input, operador);
     int qtde_comandos = 0;
     while (token != NULL && qtde_comandos < MAX_DIV - 1) {
-        // printf("Token: %s\n", token);
         aux_comandos[qtde_comandos++] = token;
         token = strtok(NULL, operador);
-        // printf("%d", qtde_comandos);
     }
     aux_comandos[qtde_comandos] = NULL; // Indica fim da lista 
     return qtde_comandos;
@@ -64,11 +61,6 @@ void executa_comandos (int qtde, char **aux_comandos) {
             // dividir o comando em argumentos
             char *argumentos[MAX_DIV]; 
             int qtde_argumentos = divide_comandos(aux_comandos[j], " ", argumentos);
-
-            // // printf("Executando comando %d:\n", j);
-            // for (int l = 0; l < qtde_argumentos; l++) {
-            //     printf("Argumento %d: %s\n", l, argumentos[l]);
-            // }
 
             // remover as aspas de cada argumento (se houver)
             for (int i = 0; i < qtde_argumentos; i++) {
@@ -114,11 +106,6 @@ int main() {
         // Separa a entrada em comandos
         char *comandos[MAX_DIV]; 
         int qtde_comandos = divide_comandos(entrada, "|", comandos);
-
-        // printf("Comandos separados:\n");
-        // for (int j = 0; j < qtde_comandos; j++) {
-        //     printf("Comando %d: %s\n", j, comandos[j]);
-        // }
 
         executa_comandos(qtde_comandos, comandos);
     }
