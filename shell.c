@@ -1,3 +1,14 @@
+/* ************************************************* */
+/* Sistemas Operacionais - Implementacao de um shell */
+/*                                                   */
+/* Gabriel de Mello Cambuy Ferreira                  */
+/* Gabriela Carregari Verza                          */
+/* Melissa Frigi Mendes                              */
+/* Raissa Barbosa dos Santos                         */
+/*                                                   */
+/*                   UNIFESP - SJC                   */
+/* ************************************************* */
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -15,6 +26,7 @@
 #define ERRO_COMANDO -3
 #define ERRO_PIPE -4
 
+// remover aspas de argumento para que seja identificado corretamente
 void remover_aspas(char *str) {
     int i, j;
     for (i = 0, j = 0; str[i] != '\0'; i++) {
@@ -25,26 +37,26 @@ void remover_aspas(char *str) {
     str[j] = '\0';
 }
 
-int divide_comandos(char *input, const char *operador, char **aux_comandos) {
+// divide string com base em operador enviado por parametro
+int divide_comandos(char *comandos, const char *operador, char **aux_comandos) {
     int qtde_comandos = 0;
     char *token;
-    char *rest = input;
-    int in_quotes = 0;
+    int entre_aspas = 0;
 
-    token = strtok(rest, operador);
+    token = strtok(comandos, operador);
     while (token != NULL && qtde_comandos < MAX_DIV - 1) {
-        if (in_quotes) {
+        if (entre_aspas) { // nao separa por espaco se estiver entre aspas
             strcat(aux_comandos[qtde_comandos - 1], " ");
             strcat(aux_comandos[qtde_comandos - 1], token);
             if (token[strlen(token) - 1] == '"') {
-                in_quotes = 0;
+                entre_aspas = 0;
             }
         } else {
             aux_comandos[qtde_comandos++] = token;
-            if (token[0] == '"') {
-                in_quotes = 1;
+            if (token[0] == '"') { // verifica se o token esta entre aspas
+                entre_aspas = 1;
                 if (token[strlen(token) - 1] == '"') {
-                    in_quotes = 0;
+                    entre_aspas = 0;
                 }
             }
         }
@@ -53,17 +65,10 @@ int divide_comandos(char *input, const char *operador, char **aux_comandos) {
 
     aux_comandos[qtde_comandos] = NULL;
     
-    // printf("Comandos divididos:\n");
-    // for (int i = 0; i < qtde_comandos; i++) {
-    //     printf("Comando %d: %s\n", i, aux_comandos[i]);
-    // }
-
     return qtde_comandos;
 }
 
-int executa_comando(char *comando) {
-    // printf("Executando comando: %s\n", comando);
-    
+int executa_comando(char *comando, int background) {
     char *argumentos[MAX_DIV];
     int qtde_argumentos = divide_comandos(comando, " ", argumentos);
     
@@ -72,17 +77,20 @@ int executa_comando(char *comando) {
     }
     
     pid_t pid = fork();
-    if (pid == 0) {
+    if (pid == 0) { // processo filho executa comando
+        if (background) {
+            setsid(); // cria uma nova sessao para executar o comando em segundo plano
+        }
         if (execvp(argumentos[0], argumentos) == -1) {
             fprintf(stderr, "Erro ao executar o comando\n");
             exit(ERRO_COMANDO);
         }
-    } else if (pid > 0) {
-        int status;
-        waitpid(pid, &status, 0);
-        // printf("Status do comando: %d\n", WEXITSTATUS(status));
-        return WEXITSTATUS(status);
-        // exit(status);
+    } else if (pid > 0) { // processo pai espera termino do filho
+        if (!background) {
+            int status;
+            waitpid(pid, &status, 0);
+            return WEXITSTATUS(status); // extrai status de saida do filho
+        }
     } else {
         fprintf(stderr, "Erro ao criar processo\n");
         exit(ERRO_PROCESSO);
@@ -95,35 +103,39 @@ void trata_operadores(char *comando) {
 
     char *operador = strstr(comando, "&&");
     if (operador != NULL) {
-        *operador = '\0'; // Substitui o operador pelo terminador de string
-        char *comando1 = comando;
-        char *comando2 = operador + 2; // Pula o operador "&&"
+        *operador = '\0';
+        char *comando1 = comando; // comando antes do operador
+        char *comando2 = operador + 2; // comando depois do operador
         
-        resultado_anterior = executa_comando(comando1);
-        if (resultado_anterior == SUCESSO) {
-            executa_comando(comando2);
+        resultado_anterior = executa_comando(comando1, 0);
+        if (resultado_anterior == SUCESSO) { // executa o prox somente se o anterior finalizar ok
+            executa_comando(comando2, 0);
         }
     } else {
         operador = strstr(comando, "||");
         if (operador != NULL) {
-            *operador = '\0'; // Substitui o operador pelo terminador de string
-            char *comando1 = comando;
-            char *comando2 = operador + 2; // Pula o operador "||"
+            *operador = '\0';
+            char *comando1 = comando; // comando antes do operador
+            char *comando2 = operador + 2; // comando depois do operador
             
-            resultado_anterior = executa_comando(comando1);
-            if (resultado_anterior != SUCESSO) {
-                executa_comando(comando2);
+            resultado_anterior = executa_comando(comando1, 0);
+            if (resultado_anterior != SUCESSO) { // executa o prox somente se o anterior falhar
+                executa_comando(comando2, 0);
             }
-        } else {
-            // Se não encontrar operadores, executa o comando normalmente
-            executa_comando(comando);
+        } else { // verifica se o comando deve ser executado em background
+            int background = 0;
+            if (comando[strlen(comando) - 1] == '&') {
+                background = 1;
+                comando[strlen(comando) - 1] = '\0';
+            }
+            executa_comando(comando, background);
         }
     }
 }
 
 void executa_comandos_pipe(int qtde, char **comandos) {
-    int fd[2];
-    int fd_in = 0;
+    int fd[2]; // armazena arquivos descritores do pipe
+    int fd_in = 0; // armazena arquivo descritor de entrada do pipe
 
     for (int j = 0; j < qtde; j++) {
         if (pipe(fd) < 0) {
@@ -132,18 +144,16 @@ void executa_comandos_pipe(int qtde, char **comandos) {
         }
 
         pid_t pid = fork();
-        if (pid == 0){
-            dup2(fd_in, 0);
-            if (j < qtde - 1) {
-                dup2(fd[1], 1);
+        if (pid == 0){ // processo filho executa comando
+            dup2(fd_in, 0); // 0 = stdin
+            if (j < qtde - 1) { // se for o ultimo comando, nao redireciona a saida
+                dup2(fd[1], 1); // 1 = stdout
             }
             close(fd[0]);
 
-            // printf("Executando comando via pipe: %s\n", comandos[j]);
-
             trata_operadores(comandos[j]);
             exit(SUCESSO);
-        } else if (pid > 0) {
+        } else if (pid > 0) { // processo pai espera termino do filho
             wait(NULL);
             close(fd[1]);
             fd_in = fd[0];
@@ -160,6 +170,8 @@ int main() {
     while (TRUE) {
         fprintf(stderr, "Digite um comando, ou 'sair' para encerrar:> ");
         fgets(entrada, sizeof(entrada), stdin);
+
+        // remove carct nova linha, garante termino correto da string, importante para strtok
         entrada[strcspn(entrada, "\n")] = 0;
 
         if (strlen(entrada) == 0 || entrada[0] == '\0') {
@@ -170,15 +182,9 @@ int main() {
             exit(SAIR);
         }
 
+        // separa entrada em comandos com base no pipe
         char *comandos[MAX_DIV];
         int qtde_comandos = divide_comandos(entrada, "|", comandos);
-
-        // printf("Comandos separados:\n");
-        // for (int j = 0; j < qtde_comandos; j++) {
-        //     printf("Comando %d: %s\n", j, comandos[j]);
-        // }
-
-        // printf("Quantidade de comandos: %d\n", qtde_comandos);
 
         executa_comandos_pipe(qtde_comandos, comandos);
     }
