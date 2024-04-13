@@ -15,10 +15,11 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-#define MAX_ENTRADA 1000
-#define MAX_DIV 100
+#define MAX_ENTRADA 1000 // tamanho maximo da string de entrada
+#define MAX_DIV 100 // em quantas partes a entrada pode ser dividida
 #define TRUE 1
 
+// Codigos de Retorno
 #define SAIR 1
 #define SUCESSO 0
 #define ERRO_ENTRADA -1
