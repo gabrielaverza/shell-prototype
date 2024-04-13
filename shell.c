@@ -4,11 +4,10 @@
 #include <unistd.h>
 #include <sys/wait.h>
 
-#define MAX_ENTRADA 1000 // tamanho máximo da string que armazena a entrada do usuário
-#define MAX_DIV 100 // número máximo de comandos/argumentos em que a entrada pode ser dividida
+#define MAX_ENTRADA 1000
+#define MAX_DIV 100
 #define TRUE 1
 
-/* CÓDIGOS DE RETORNO */
 #define SAIR 1
 #define SUCESSO 0
 #define ERRO_ENTRADA -1
@@ -16,7 +15,6 @@
 #define ERRO_COMANDO -3
 #define ERRO_PIPE -4
 
-// Função para remover as aspas de um argumento
 void remover_aspas(char *str) {
     int i, j;
     for (i = 0, j = 0; str[i] != '\0'; i++) {
@@ -27,7 +25,6 @@ void remover_aspas(char *str) {
     str[j] = '\0';
 }
 
-// Separa em comandos individuais com base no operador enviado por parametro
 int divide_comandos(char *input, const char *operador, char **aux_comandos) {
     char *token = strtok(input, operador);
     int qtde_comandos = 0;
@@ -35,13 +32,74 @@ int divide_comandos(char *input, const char *operador, char **aux_comandos) {
         aux_comandos[qtde_comandos++] = token;
         token = strtok(NULL, operador);
     }
-    aux_comandos[qtde_comandos] = NULL; // Indica fim da lista 
+
+    aux_comandos[qtde_comandos] = NULL;
     return qtde_comandos;
 }
 
-void executa_comandos (int qtde, char **aux_comandos) {
-    int fd[2]; // Armazena descritores do pipe
-    int fd_in = 0; // Armazena descritor de entrada do pipe
+int executa_comando(char *comando) {
+    // printf("Executando comando: %s\n", comando);
+    
+    char *argumentos[MAX_DIV];
+    int qtde_argumentos = divide_comandos(comando, " ", argumentos);
+    
+    for (int i = 0; i < qtde_argumentos; i++) {
+        remover_aspas(argumentos[i]);
+    }
+    
+    pid_t pid = fork();
+    if (pid == 0) {
+        if (execvp(argumentos[0], argumentos) == -1) {
+            fprintf(stderr, "Erro ao executar o comando\n");
+            exit(ERRO_COMANDO);
+        }
+    } else if (pid > 0) {
+        int status;
+        waitpid(pid, &status, 0);
+        // printf("Status do comando: %d\n", WEXITSTATUS(status));
+        return WEXITSTATUS(status);
+        // exit(status);
+    } else {
+        fprintf(stderr, "Erro ao criar processo\n");
+        exit(ERRO_PROCESSO);
+    }
+    return SUCESSO;
+}
+
+void trata_operadores(char *comando) {
+    int resultado_anterior = SUCESSO;
+
+    char *operador = strstr(comando, "&&");
+    if (operador != NULL) {
+        *operador = '\0'; // Substitui o operador pelo terminador de string
+        char *comando1 = comando;
+        char *comando2 = operador + 2; // Pula o operador "&&"
+        
+        resultado_anterior = executa_comando(comando1);
+        if (resultado_anterior == SUCESSO) {
+            executa_comando(comando2);
+        }
+    } else {
+        operador = strstr(comando, "||");
+        if (operador != NULL) {
+            *operador = '\0'; // Substitui o operador pelo terminador de string
+            char *comando1 = comando;
+            char *comando2 = operador + 2; // Pula o operador "||"
+            
+            resultado_anterior = executa_comando(comando1);
+            if (resultado_anterior != SUCESSO) {
+                executa_comando(comando2);
+            }
+        } else {
+            // Se não encontrar operadores, executa o comando normalmente
+            executa_comando(comando);
+        }
+    }
+}
+
+void executa_comandos_pipe(int qtde, char **comandos) {
+    int fd[2];
+    int fd_in = 0;
 
     for (int j = 0; j < qtde; j++) {
         if (pipe(fd) < 0) {
@@ -51,29 +109,17 @@ void executa_comandos (int qtde, char **aux_comandos) {
 
         pid_t pid = fork();
         if (pid == 0){
-            // processo filho executa o comando
-            dup2(fd_in, 0); // 0 = stdin
-            if (j != qtde - 1) { // não redireciona a saída se este for o último comando
-                dup2(fd[1], 1); // 1 = sdtout
+            dup2(fd_in, 0);
+            if (j < qtde - 1) {
+                dup2(fd[1], 1);
             }
             close(fd[0]);
-            
-            // dividir o comando em argumentos
-            char *argumentos[MAX_DIV]; 
-            int qtde_argumentos = divide_comandos(aux_comandos[j], " ", argumentos);
 
-            // remover as aspas de cada argumento (se houver)
-            for (int i = 0; i < qtde_argumentos; i++) {
-                remover_aspas(argumentos[i]);
-            }
+            // printf("Executando comando via pipe: %s\n", comandos[j]);
 
-            // executar o comando
-            if (execvp(argumentos[0], argumentos) == -1) {
-                fprintf(stderr, "Erro ao executar o comando\n");
-                exit(ERRO_COMANDO);
-            }
+            trata_operadores(comandos[j]);
+            exit(SUCESSO);
         } else if (pid > 0) {
-            // processo pai
             wait(NULL);
             close(fd[1]);
             fd_in = fd[0];
@@ -85,30 +131,32 @@ void executa_comandos (int qtde, char **aux_comandos) {
 }
 
 int main() {
-    // Entrada do usuário
     char entrada[MAX_ENTRADA];
     
     while (TRUE) {
         fprintf(stderr, "Digite um comando, ou 'sair' para encerrar:> ");
         fgets(entrada, sizeof(entrada), stdin);
-
-        // Remove o caractere de nova linha do final da entrada, para garantir que a string esteja terminada corretamente apos a leitura
         entrada[strcspn(entrada, "\n")] = 0;
 
         if (strlen(entrada) == 0 || entrada[0] == '\0') {
             fprintf(stderr, "Entrada vazia ou com caracteres inválidos.\n");
             exit(ERRO_ENTRADA);
         } else if (strcmp(entrada, "sair") == 0) {
-            printf("Até logo...");
+            printf("Até logo...\n");
             exit(SAIR);
-        } 
+        }
 
-        // Separa a entrada em comandos
-        char *comandos[MAX_DIV]; 
+        char *comandos[MAX_DIV];
         int qtde_comandos = divide_comandos(entrada, "|", comandos);
 
-        executa_comandos(qtde_comandos, comandos);
+        printf("Comandos separados:\n");
+        for (int j = 0; j < qtde_comandos; j++) {
+            printf("Comando %d: %s\n", j, comandos[j]);
+        }
+
+        // printf("Quantidade de comandos: %d\n", qtde_comandos);
+
+        executa_comandos_pipe(qtde_comandos, comandos);
     }
-    
     return SUCESSO;
 }
