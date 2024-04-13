@@ -26,14 +26,38 @@ void remover_aspas(char *str) {
 }
 
 int divide_comandos(char *input, const char *operador, char **aux_comandos) {
-    char *token = strtok(input, operador);
     int qtde_comandos = 0;
+    char *token;
+    char *rest = input;
+    int in_quotes = 0;
+
+    token = strtok(rest, operador);
     while (token != NULL && qtde_comandos < MAX_DIV - 1) {
-        aux_comandos[qtde_comandos++] = token;
+        if (in_quotes) {
+            strcat(aux_comandos[qtde_comandos - 1], " ");
+            strcat(aux_comandos[qtde_comandos - 1], token);
+            if (token[strlen(token) - 1] == '"') {
+                in_quotes = 0;
+            }
+        } else {
+            aux_comandos[qtde_comandos++] = token;
+            if (token[0] == '"') {
+                in_quotes = 1;
+                if (token[strlen(token) - 1] == '"') {
+                    in_quotes = 0;
+                }
+            }
+        }
         token = strtok(NULL, operador);
     }
 
     aux_comandos[qtde_comandos] = NULL;
+    
+    // printf("Comandos divididos:\n");
+    // for (int i = 0; i < qtde_comandos; i++) {
+    //     printf("Comando %d: %s\n", i, aux_comandos[i]);
+    // }
+
     return qtde_comandos;
 }
 
@@ -149,10 +173,10 @@ int main() {
         char *comandos[MAX_DIV];
         int qtde_comandos = divide_comandos(entrada, "|", comandos);
 
-        printf("Comandos separados:\n");
-        for (int j = 0; j < qtde_comandos; j++) {
-            printf("Comando %d: %s\n", j, comandos[j]);
-        }
+        // printf("Comandos separados:\n");
+        // for (int j = 0; j < qtde_comandos; j++) {
+        //     printf("Comando %d: %s\n", j, comandos[j]);
+        // }
 
         // printf("Quantidade de comandos: %d\n", qtde_comandos);
 
