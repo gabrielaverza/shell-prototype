@@ -17,7 +17,7 @@ Exemplo 2: cat /proc/cpuinfo | grep "model name" | wc -l <br/><br/>
 Exemplo 1: cat 12345 || echo "aquivo inexistente" <br/>
 Exemplo 2: ping -c1 www.unifesp.br.br && echo "SERVIDOR DISPONIVEL" || echo "SERVIDOR INDISPONIVEL"<br/><br/>
 **4. Executar comandos em background, liberando o shell para receber novos comandos do usuário** <br/>
-Exemplo 1: ping -c5 www.unifesp.br 
+Exemplo 1: ping -c5 www.unifesp.br &
 
 
 
