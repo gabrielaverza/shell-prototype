@@ -40,23 +40,24 @@ void remover_aspas(char *str) {
     str[j] = '\0';
 }
 
-// divide string com base em operador enviado por parametro
 int divide_comandos(char *comandos, const char *operador, char **aux_comandos) {
     char *token = strtok(comandos, operador);
     int qtde_comandos = 0;
 
     while (token != NULL && qtde_comandos < MAX_DIV - 1) {
-        if ((int) token[0] == 34 || (int) token[0] == 39) { // checa por aspas duplas ou simples
+        // verifica se o token começa com aspas duplas
+        if ((int) token[0] == 34 || (int) token[0] == 39) {
             char temp[MAX_ENTRADA] = "";
             strcat(temp, token);
             
-            while ((int) token[strlen(token) - 1] != (int) token[0]) {
+            // continua concatenando ate encontrar as aspas finais
+            while ((int) token[strlen(token) - 1] != 34 && (int) token[strlen(token) - 1] != 39) {
                 token = strtok(NULL, " ");
                 if (token == NULL) {
                     break;
                 }
-                strcat(temp, " ");
-                strcat(temp, token); // concatena ate encontrar as aspas finais
+                strcat(temp, " "); // mantém o delimitador " " quando houver aspas
+                strcat(temp, token);
             }
             
             aux_comandos[qtde_comandos] = (char *)malloc(strlen(temp) + 1);
@@ -67,7 +68,7 @@ int divide_comandos(char *comandos, const char *operador, char **aux_comandos) {
         }
         
         qtde_comandos++;
-        token = strtok(NULL, operador); // move para o próximo token
+        token = strtok(NULL, operador); // move para o proximo token
     }
 
     aux_comandos[qtde_comandos] = NULL; // indica fim da lista
