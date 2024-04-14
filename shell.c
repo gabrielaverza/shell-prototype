@@ -51,7 +51,7 @@ int divide_comandos(char *comandos, const char *operador, char **aux_comandos) {
             strcat(temp, token);
             
             while ((int) token[strlen(token) - 1] != (int) token[0]) {
-                token = strtok(NULL, operador);
+                token = strtok(NULL, " ");
                 if (token == NULL) {
                     break;
                 }
