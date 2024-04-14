@@ -31,6 +31,7 @@
 
 // remover aspas de argumento para que seja identificado corretamente
 void remover_aspas(char *str) {
+    // ascii 34 = " e 39 = '
     int i, j;
     for (i = 0, j = 0; str[i] != '\0'; i++) {
         if ((int) str[i] != 34 && (int) str[i] != 39) { // verifica por aspas duplas e simples
@@ -183,7 +184,7 @@ int trata_operadores(char *comando) {
         }
     } else { // executa o comando
         int background = 0;
-        if (comando[strlen(comando) - 1] == '&') {
+        if (comando[strlen(comando) - 1] == '&') { // verifica se deve ser executado em bg
             background = 1;
             comando[strlen(comando) - 1] = '\0';
         }
