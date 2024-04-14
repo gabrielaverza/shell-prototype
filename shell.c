@@ -40,6 +40,33 @@ void remover_aspas(char *str) {
     str[j] = '\0';
 }
 
+int divide_comandos_pipe(const char *comandos, char **aux_comandos) {
+    int qtde_comandos = 0;
+    int start = 0;
+
+    aux_comandos[qtde_comandos] = (char *)malloc(MAX_ENTRADA); // aloca espaco para o primeiro token
+    aux_comandos[qtde_comandos][0] = '\0'; // inicializa com string vazia
+
+    for (int i = 0; comandos[i] != '\0'; i++) {
+        if (comandos[i] == '|') {
+            if (comandos[i + 1] == '|') {
+                strcat(aux_comandos[qtde_comandos], "||");
+                i++; // pula o proximo '|' pois ja foi tratado
+            } else {
+                qtde_comandos++;
+                aux_comandos[qtde_comandos] = (char *)malloc(MAX_ENTRADA); // aloca espaco para o proximo token
+                aux_comandos[qtde_comandos][0] = '\0'; // inicializa com string vazia
+            }
+        } else {
+            char temp[2] = {comandos[i], '\0'};
+            strcat(aux_comandos[qtde_comandos], temp);
+        }
+    }
+
+    aux_comandos[qtde_comandos + 1] = NULL; // indica fim da lista
+    return qtde_comandos + 1;
+}
+
 int divide_comandos(char *comandos, const char *operador, char **aux_comandos) {
     char *token = strtok(comandos, operador);
     int qtde_comandos = 0;
@@ -105,39 +132,64 @@ int executa_comando(char *comando, int background) {
     return SUCESSO;
 }
 
-void trata_operadores(char *comando) {
-    int resultado_anterior = SUCESSO;
+int trata_operadores(char *comando) {
+    char *operador_ou = strstr(comando, "||");
+    char *operador_e = strstr(comando, "&&");
+    int resultado_comando;
 
-    char *operador = strstr(comando, "&&");
-    if (operador != NULL) {
-        *operador = '\0';
-        char *comando1 = comando; // comando antes do operador
-        char *comando2 = operador + 2; // comando depois do operador
-        
-        resultado_anterior = executa_comando(comando1, 0);
-        if (resultado_anterior == SUCESSO) { // executa o prox somente se o anterior finalizar ok
-            executa_comando(comando2, 0);
-        }
-    } else {
-        operador = strstr(comando, "||");
-        if (operador != NULL) {
-            *operador = '\0';
-            char *comando1 = comando; // comando antes do operador
-            char *comando2 = operador + 2; // comando depois do operador
+    if (operador_e && operador_ou) { // ambos os operadores encontrados
+        if (operador_e < operador_ou) { // && aparece antes de ||
+            *operador_e = '\0';
             
-            resultado_anterior = executa_comando(comando1, 0);
-            if (resultado_anterior != SUCESSO) { // executa o prox somente se o anterior falhar
+            char *comando1 = comando;
+            char *comando2 = operador_e + 2;
+
+            resultado_comando = executa_comando(comando1, 0);
+            if (resultado_comando == SUCESSO) {
+                trata_operadores(comando2);
+            } else {
+                *operador_ou = '\0';
+                comando2 = operador_ou + 2;
                 executa_comando(comando2, 0);
             }
-        } else { // verifica se o comando deve ser executado em background
-            int background = 0;
-            if (comando[strlen(comando) - 1] == '&') {
-                background = 1;
-                comando[strlen(comando) - 1] = '\0';
+        } else { // || aparece antes de &&
+            *operador_ou = '\0';
+            
+            char *comando1 = comando;
+            char *comando2 = operador_ou + 2;
+
+            resultado_comando = executa_comando(comando1, 0);
+            if (resultado_comando != SUCESSO) {
+                trata_operadores(comando2);
             }
-            executa_comando(comando, background);
         }
+    } else if (operador_e) { // apenas operador &&
+        *operador_e = '\0';
+        char *comando1 = comando;
+        char *comando2 = operador_e + 2;
+
+        resultado_comando = executa_comando(comando1, 0);
+        if (resultado_comando == SUCESSO) {
+            trata_operadores(comando2);
+        }
+    } else if (operador_ou) { // apenas operador ||
+        *operador_ou = '\0';
+        char *comando1 = comando;
+        char *comando2 = operador_ou + 2;
+
+        resultado_comando = executa_comando(comando1, 0);
+        if (resultado_comando != SUCESSO) {
+            trata_operadores(comando2);
+        }
+    } else { // executa o comando
+        int background = 0;
+        if (comando[strlen(comando) - 1] == '&') {
+            background = 1;
+            comando[strlen(comando) - 1] = '\0';
+        }
+        return executa_comando(comando, background);
     }
+    return SUCESSO;
 }
 
 void executa_comandos_pipe(int qtde, char **comandos) {
@@ -191,7 +243,7 @@ int main() {
 
         // separa entrada em comandos com base no pipe
         char *comandos[MAX_DIV];
-        int qtde_comandos = divide_comandos(entrada, "|", comandos);
+        int qtde_comandos = divide_comandos_pipe(entrada, comandos);
 
         executa_comandos_pipe(qtde_comandos, comandos);
     }
