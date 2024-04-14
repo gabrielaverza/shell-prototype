@@ -33,41 +33,44 @@
 void remover_aspas(char *str) {
     int i, j;
     for (i = 0, j = 0; str[i] != '\0'; i++) {
-        if (str[i] != '"') {
+        if ((int) str[i] != 34 && (int) str[i] != 39) { // verifica por aspas duplas e simples
             str[j++] = str[i];
-        }
+        } 
     }
     str[j] = '\0';
 }
 
 // divide string com base em operador enviado por parametro
 int divide_comandos(char *comandos, const char *operador, char **aux_comandos) {
+    char *token = strtok(comandos, operador);
     int qtde_comandos = 0;
-    char *token;
-    int entre_aspas = 0;
 
-    token = strtok(comandos, operador);
     while (token != NULL && qtde_comandos < MAX_DIV - 1) {
-        if (entre_aspas) { // nao separa por espaco se estiver entre aspas
-            strcat(aux_comandos[qtde_comandos - 1], " ");
-            strcat(aux_comandos[qtde_comandos - 1], token);
-            if (token[strlen(token) - 1] == '"') {
-                entre_aspas = 0;
-            }
-        } else {
-            aux_comandos[qtde_comandos++] = token;
-            if (token[0] == '"') { // verifica se o token esta entre aspas
-                entre_aspas = 1;
-                if (token[strlen(token) - 1] == '"') {
-                    entre_aspas = 0;
+        if ((int) token[0] == 34 || (int) token[0] == 39) { // checa por aspas duplas ou simples
+            char temp[MAX_ENTRADA] = "";
+            strcat(temp, token);
+            
+            while ((int) token[strlen(token) - 1] != (int) token[0]) {
+                token = strtok(NULL, operador);
+                if (token == NULL) {
+                    break;
                 }
+                strcat(temp, " ");
+                strcat(temp, token); // concatena ate encontrar as aspas finais
             }
+            
+            aux_comandos[qtde_comandos] = (char *)malloc(strlen(temp) + 1);
+            strcpy(aux_comandos[qtde_comandos], temp);
+        } else {
+            aux_comandos[qtde_comandos] = (char *)malloc(strlen(token) + 1);
+            strcpy(aux_comandos[qtde_comandos], token);
         }
-        token = strtok(NULL, operador);
+        
+        qtde_comandos++;
+        token = strtok(NULL, operador); // move para o próximo token
     }
 
-    aux_comandos[qtde_comandos] = NULL;
-    
+    aux_comandos[qtde_comandos] = NULL; // indica fim da lista
     return qtde_comandos;
 }
 
