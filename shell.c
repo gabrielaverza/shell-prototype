@@ -31,7 +31,6 @@
 
 // remover aspas de argumento para que seja identificado corretamente
 void remover_aspas(char *str) {
-    // ascii 34 = " e 39 = '
     int i, j;
     for (i = 0, j = 0; str[i] != '\0'; i++) {
         if ((int) str[i] != 34 && (int) str[i] != 39) { // verifica por aspas duplas e simples
@@ -68,8 +67,8 @@ int divide_comandos_pipe(const char *comandos, char **aux_comandos) {
     return qtde_comandos + 1;
 }
 
-int divide_comandos(char *comandos, const char *operador, char **aux_comandos) {
-    char *token = strtok(comandos, operador);
+int divide_comandos(char *comandos, char **aux_comandos) {
+    char *token = strtok(comandos, " ");
     int qtde_comandos = 0;
 
     while (token != NULL && qtde_comandos < MAX_DIV - 1) {
@@ -96,7 +95,7 @@ int divide_comandos(char *comandos, const char *operador, char **aux_comandos) {
         }
         
         qtde_comandos++;
-        token = strtok(NULL, operador); // move para o proximo token
+        token = strtok(NULL, " "); // move para o proximo token
     }
 
     aux_comandos[qtde_comandos] = NULL; // indica fim da lista
@@ -105,7 +104,7 @@ int divide_comandos(char *comandos, const char *operador, char **aux_comandos) {
 
 int executa_comando(char *comando, int background) {
     char *argumentos[MAX_DIV];
-    int qtde_argumentos = divide_comandos(comando, " ", argumentos);
+    int qtde_argumentos = divide_comandos(comando, argumentos);
     
     for (int i = 0; i < qtde_argumentos; i++) {
         remover_aspas(argumentos[i]);
@@ -184,7 +183,7 @@ int trata_operadores(char *comando) {
         }
     } else { // executa o comando
         int background = 0;
-        if (comando[strlen(comando) - 1] == '&') { // verifica se deve ser executado em bg
+        if (comando[strlen(comando) - 1] == '&') {
             background = 1;
             comando[strlen(comando) - 1] = '\0';
         }
