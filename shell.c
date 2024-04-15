@@ -43,7 +43,6 @@ void remover_aspas(char *str) {
 
 int divide_comandos_pipe(const char *comandos, char **aux_comandos) {
     int qtde_comandos = 0;
-    int start = 0;
 
     aux_comandos[qtde_comandos] = (char *)malloc(MAX_ENTRADA); // aloca espaco para o primeiro token
     aux_comandos[qtde_comandos][0] = '\0'; // inicializa com string vazia
