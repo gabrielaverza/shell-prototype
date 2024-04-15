@@ -68,8 +68,8 @@ int divide_comandos_pipe(const char *comandos, char **aux_comandos) {
     return qtde_comandos + 1;
 }
 
-int divide_comandos(char *comandos, const char *operador, char **aux_comandos) {
-    char *token = strtok(comandos, operador);
+int divide_comandos(char *comandos, char **aux_comandos) {
+    char *token = strtok(comandos, " ");
     int qtde_comandos = 0;
 
     while (token != NULL && qtde_comandos < MAX_DIV - 1) {
@@ -96,7 +96,7 @@ int divide_comandos(char *comandos, const char *operador, char **aux_comandos) {
         }
         
         qtde_comandos++;
-        token = strtok(NULL, operador); // move para o proximo token
+        token = strtok(NULL, " "); // move para o proximo token
     }
 
     aux_comandos[qtde_comandos] = NULL; // indica fim da lista
@@ -105,7 +105,7 @@ int divide_comandos(char *comandos, const char *operador, char **aux_comandos) {
 
 int executa_comando(char *comando, int background) {
     char *argumentos[MAX_DIV];
-    int qtde_argumentos = divide_comandos(comando, " ", argumentos);
+    int qtde_argumentos = divide_comandos(comando, argumentos);
     
     for (int i = 0; i < qtde_argumentos; i++) {
         remover_aspas(argumentos[i]);
