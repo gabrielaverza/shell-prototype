@@ -71,7 +71,7 @@ int divide_comandos(char *comandos, char **aux_comandos) {
     char *token = strtok(comandos, " ");
     int qtde_comandos = 0;
 
-    while (token != NULL && qtde_comandos < MAX_DIV - 1) {
+    while (token != NULL && qtde_comandos < MAX_DIV) {
         // verifica se o token começa com aspas duplas
         if ((int) token[0] == 34 || (int) token[0] == 39) {
             char temp[MAX_ENTRADA] = "";
