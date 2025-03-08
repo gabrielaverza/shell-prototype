@@ -29,7 +29,7 @@ cat /proc/cpuinfo | grep "model name" | wc -l
 **3. Executar comandos condicionados com operadores OR (||) e AND (&&)** <br/>
 Exemplo 1:
 ```
-cat 12345 || echo "aquivo inexistente"
+cat 12345 || echo "arquivo inexistente"
 ```
 <br/>
 Exemplo 2: 
