@@ -64,28 +64,28 @@ ls -la
 <br/><br/>
 **2. Execute chained commands using the pipe "|" operator to combine output and input between n commands**  
 Example 1:  
-```bash
+```
 ls -la | grep "test"  
 ```
 <br/>
 Example 2:  
-```bash
+```
 cat /proc/cpuinfo | grep "model name" | wc -l  
 ```  
 <br/><br/>
 **3. Execute conditional commands with OR (||) and AND (&&) operators**  
 Example 1:  
-```bash
+```
 cat 12345 || echo "file does not exist"  
 ```
 <br/>
 Example 2:  
-```bash
+```
 ping -c1 www.unifesp.br.br && echo "SERVER AVAILABLE" || echo "SERVER UNAVAILABLE"  
 ```  
 <br/><br/>
 **4. Execute commands in the background, allowing the shell to receive new user commands**  
 Example 1:  
-```bash
+```
 ping -c5 www.unifesp.br &  
 ```  
