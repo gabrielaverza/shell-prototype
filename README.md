@@ -1,5 +1,5 @@
 # Sistemas Operacionais
-Repositório de projetos desenvolvidos durante a disciplina Sistemas Operacionais, na UNIFESP - SJC.
+Repositório de um projeto desenvolvido durante a disciplina Sistemas Operacionais, na UNIFESP - SJC.
 
 ## Implementação de um protótipo de shell
 
